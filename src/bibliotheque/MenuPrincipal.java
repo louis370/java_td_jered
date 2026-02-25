@@ -21,6 +21,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
     public MenuPrincipal() {
         initComponents();
         afficherLivres();
+        afficherLecteurs();
+        chargerListes();
+        afficherEmprunts();
     }
 
     public void afficherLivres() {
@@ -47,11 +50,99 @@ public class MenuPrincipal extends javax.swing.JFrame {
         
         // 3. On applique le modèle au tableau visuel
         tableLivres.setModel(modele);
+        chargerListes();
         
     } catch (Exception e) {
         System.out.println("Erreur d'affichage : " + e.getMessage());
         }
     }
+        public void afficherLecteurs() {
+        String[] colonnes = {"ID", "Nom Complet", "Téléphone"};
+        DefaultTableModel modele = new DefaultTableModel(null, colonnes);
+
+        try {
+            java.sql.Connection con = DatabaseConnection.seConnecter();
+            java.sql.Statement st = con.createStatement();
+            java.sql.ResultSet rs = st.executeQuery("SELECT * FROM lecteurs");
+
+            while (rs.next()) {
+                Object[] ligne = {
+                    rs.getInt("id_lecteur"),
+                    rs.getString("nom_complet"),
+                    rs.getString("telephone")
+                };
+                modele.addRow(ligne);
+            }
+            tableLecteurs.setModel(modele);
+            chargerListes();
+
+        } catch (Exception e) {
+            System.out.println("Erreur lecteurs : " + e.getMessage());
+        }
+    }
+                public void chargerListes() {
+            // On vide les listes pour éviter les doublons au rafraîchissement
+            comboLivres.removeAllItems();
+            comboLecteurs.removeAllItems();
+
+            try {
+                java.sql.Connection con = DatabaseConnection.seConnecter();
+                java.sql.Statement st = con.createStatement();
+
+                // 1. Charger uniquement les livres DISPONIBLES
+                java.sql.ResultSet rsLivres = st.executeQuery("SELECT id_livre, titre FROM livres WHERE disponible = true");
+                while(rsLivres.next()) {
+                    comboLivres.addItem(rsLivres.getInt("id_livre") + " - " + rsLivres.getString("titre"));
+                }
+
+                // 2. Charger tous les lecteurs
+                java.sql.ResultSet rsLecteurs = st.executeQuery("SELECT id_lecteur, nom_complet FROM lecteurs");
+                while(rsLecteurs.next()) {
+                    comboLecteurs.addItem(rsLecteurs.getInt("id_lecteur") + " - " + rsLecteurs.getString("nom_complet"));
+                }
+
+                // 3. Petite touche de confort : on met la date du jour automatiquement
+                txtDateEmprunt.setText(java.time.LocalDate.now().toString());
+                // Date de retour prévue dans 14 jours par exemple
+                txtDateRetour.setText(java.time.LocalDate.now().plusDays(14).toString());
+
+            } catch (Exception e) {
+                System.out.println("Erreur chargement des listes : " + e.getMessage());
+            }
+        }
+                public void afficherEmprunts() {
+                    String[] colonnes = {"N° Emprunt", "Livre", "Lecteur", "Date Emprunt", "Retour Prévu", "Statut"};
+                    javax.swing.table.DefaultTableModel modele = new javax.swing.table.DefaultTableModel(null, colonnes);
+
+                    try {
+                        java.sql.Connection con = DatabaseConnection.seConnecter();
+                        java.sql.Statement st = con.createStatement();
+
+                        // Requête pour lier les 3 tables ensemble !
+                        String sql = "SELECT e.id_emprunt, l.titre, m.nom_complet, e.date_emprunt, e.date_retour_prevue, e.statut " +
+                                     "FROM emprunts e " +
+                                     "JOIN livres l ON e.id_livre = l.id_livre " +
+                                     "JOIN lecteurs m ON e.id_lecteur = m.id_lecteur";
+
+                        java.sql.ResultSet rs = st.executeQuery(sql);
+
+                        while (rs.next()) {
+                            Object[] ligne = {
+                                rs.getInt("id_emprunt"),
+                                rs.getString("titre"),
+                                rs.getString("nom_complet"),
+                                rs.getString("date_emprunt"),
+                                rs.getString("date_retour_prevue"),
+                                rs.getString("statut")
+                            };
+                            modele.addRow(ligne);
+                        }
+                        tableEmprunts.setModel(modele);
+
+                    } catch (Exception e) {
+                        System.out.println("Erreur affichage emprunts : " + e.getMessage());
+                    }
+                }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -61,6 +152,8 @@ public class MenuPrincipal extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -75,7 +168,39 @@ public class MenuPrincipal extends javax.swing.JFrame {
         btnSupprimer = new javax.swing.JButton();
         btnModifier = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        tableLecteurs = new javax.swing.JTable();
+        jLabel4 = new javax.swing.JLabel();
+        txtNom = new javax.swing.JTextField();
+        jLabel5 = new javax.swing.JLabel();
+        txtTelephone = new javax.swing.JTextField();
+        btnAjouter1 = new javax.swing.JButton();
+        btnModifier1 = new javax.swing.JButton();
+        btnSupprimer1 = new javax.swing.JButton();
         jPanel3 = new javax.swing.JPanel();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        tableEmprunts = new javax.swing.JTable();
+        comboLivres = new javax.swing.JComboBox<>();
+        comboLecteurs = new javax.swing.JComboBox<>();
+        jLabel6 = new javax.swing.JLabel();
+        txtDateEmprunt = new javax.swing.JTextField();
+        jLabel7 = new javax.swing.JLabel();
+        txtDateRetour = new javax.swing.JTextField();
+        btnEmprunter = new javax.swing.JButton();
+        btnRetourner = new javax.swing.JButton();
+
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane2.setViewportView(jTable1);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -159,33 +284,157 @@ public class MenuPrincipal extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnModifier))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 289, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 78, Short.MAX_VALUE))
+                .addGap(0, 200, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Gestion des Livres", jPanel1);
+
+        tableLecteurs.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        tableLecteurs.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tableLecteursMouseClicked(evt);
+            }
+        });
+        jScrollPane3.setViewportView(tableLecteurs);
+
+        jLabel4.setText("Nom Complet");
+
+        jLabel5.setText("Numéro");
+
+        btnAjouter1.setBackground(new java.awt.Color(0, 204, 0));
+        btnAjouter1.setText("Ajouter");
+        btnAjouter1.addActionListener(this::btnAjouter1ActionPerformed);
+
+        btnModifier1.setBackground(new java.awt.Color(255, 255, 0));
+        btnModifier1.setText("Modifier");
+        btnModifier1.addActionListener(this::btnModifier1ActionPerformed);
+
+        btnSupprimer1.setBackground(new java.awt.Color(255, 0, 0));
+        btnSupprimer1.setText("Supprimer");
+        btnSupprimer1.addActionListener(this::btnSupprimer1ActionPerformed);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 491, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addGap(20, 20, 20)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel5)
+                    .addComponent(txtNom)
+                    .addComponent(txtTelephone)
+                    .addComponent(btnAjouter1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnSupprimer1, javax.swing.GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE)
+                    .addComponent(btnModifier1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 327, Short.MAX_VALUE)
+                .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 367, Short.MAX_VALUE)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 271, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel4)
+                        .addGap(18, 18, 18)
+                        .addComponent(txtNom, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel5)
+                        .addGap(18, 18, 18)
+                        .addComponent(txtTelephone, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(btnAjouter1)
+                        .addGap(18, 18, 18)
+                        .addComponent(btnSupprimer1)
+                        .addGap(18, 18, 18)
+                        .addComponent(btnModifier1)))
+                .addContainerGap(218, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Lecteurs", jPanel2);
+
+        tableEmprunts.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane4.setViewportView(tableEmprunts);
+
+        comboLivres.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        comboLecteurs.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        jLabel6.setText("Date d'emprunt");
+
+        jLabel7.setText("Date de retour");
+
+        btnEmprunter.setBackground(new java.awt.Color(255, 255, 0));
+        btnEmprunter.setText("Ajouter Emprunt");
+        btnEmprunter.addActionListener(this::btnEmprunterActionPerformed);
+
+        btnRetourner.setBackground(new java.awt.Color(0, 204, 0));
+        btnRetourner.setText("Livre retourné");
+        btnRetourner.addActionListener(this::btnRetournerActionPerformed);
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 491, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel7)
+                    .addComponent(btnEmprunter, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnRetourner, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(txtDateRetour)
+                    .addComponent(txtDateEmprunt)
+                    .addComponent(comboLecteurs, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(comboLivres, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 349, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 367, Short.MAX_VALUE)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel3Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(comboLivres, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(comboLecteurs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(txtDateEmprunt, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(txtDateRetour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(btnEmprunter)
+                        .addGap(18, 18, 18)
+                        .addComponent(btnRetourner)))
+                .addContainerGap(203, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Registre des Emprunts", jPanel3);
@@ -314,12 +563,189 @@ public class MenuPrincipal extends javax.swing.JFrame {
             pst.setString(4, id);
 
             pst.executeUpdate();
-            afficherLivres(); // Rafraîchir
+            afficherLivres();
             javax.swing.JOptionPane.showMessageDialog(this, "Mise à jour réussie !");
         } catch (Exception e) {
             e.printStackTrace();
         }        // TODO add your handling code here:
     }//GEN-LAST:event_btnModifierActionPerformed
+
+    private void btnAjouter1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAjouter1ActionPerformed
+        try {
+            java.sql.Connection con = DatabaseConnection.seConnecter();
+            String sql = "INSERT INTO lecteurs (nom_complet, telephone) VALUES (?, ?)";
+            java.sql.PreparedStatement pst = con.prepareStatement(sql);
+
+            pst.setString(1, txtNom.getText());
+            pst.setString(2, txtTelephone.getText());
+
+            pst.executeUpdate();
+            javax.swing.JOptionPane.showMessageDialog(this, "Lecteur enregistré !");
+
+            // On vide les champs et on rafraîchit le tableau
+            txtNom.setText("");
+            txtTelephone.setText("");
+            afficherLecteurs();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }        // TODO add your handling code here:
+    }//GEN-LAST:event_btnAjouter1ActionPerformed
+
+    private void btnEmprunterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEmprunterActionPerformed
+        // TODO add your handling code here:
+        try {
+            // 1. Vérifier qu'il y a bien un livre et un lecteur sélectionnés
+            if (comboLivres.getSelectedItem() == null || comboLecteurs.getSelectedItem() == null) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Veuillez sélectionner un livre et un lecteur !");
+                return;
+            }
+
+            // 2. Récupérer les éléments sélectionnés
+            String livreSelectionne = comboLivres.getSelectedItem().toString();
+            String lecteurSelectionne = comboLecteurs.getSelectedItem().toString();
+
+            // 3. Extraire les ID (On coupe le texte avant le " - " pour récupérer juste le numéro)
+            int idLivre = Integer.parseInt(livreSelectionne.split(" - ")[0]);
+            int idLecteur = Integer.parseInt(lecteurSelectionne.split(" - ")[0]);
+
+            // 4. Récupérer les dates
+            String dateEmprunt = txtDateEmprunt.getText();
+            String dateRetour = txtDateRetour.getText();
+
+            // 5. Connexion à la base de données
+            java.sql.Connection con = DatabaseConnection.seConnecter();
+
+            // ACTION 1 : Enregistrer l'emprunt dans le registre
+            String sqlEmprunt = "INSERT INTO emprunts (id_livre, id_lecteur, date_emprunt, date_retour_prevue, statut) VALUES (?, ?, ?, ?, 'En cours')";
+            java.sql.PreparedStatement pst1 = con.prepareStatement(sqlEmprunt);
+            pst1.setInt(1, idLivre);
+            pst1.setInt(2, idLecteur);
+            pst1.setString(3, dateEmprunt);
+            pst1.setString(4, dateRetour);
+            pst1.executeUpdate();
+
+            // ACTION 2 : Mettre à jour le statut du livre (il n'est plus disponible)
+            String sqlLivre = "UPDATE livres SET disponible = false WHERE id_livre = ?";
+            java.sql.PreparedStatement pst2 = con.prepareStatement(sqlLivre);
+            pst2.setInt(1, idLivre);
+            pst2.executeUpdate();
+
+            // 6. Message de succès et rafraîchissement de TOUT le logiciel
+            javax.swing.JOptionPane.showMessageDialog(this, "Emprunt validé avec succès !");
+
+            afficherEmprunts(); // Met à jour le tableau des emprunts
+            afficherLivres();   // Met à jour le tableau des livres (le statut passe à "Sorti")
+            chargerListes();    // Met à jour les listes déroulantes (le livre emprunté disparaît des choix !)
+
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Erreur lors de l'emprunt : " + e.getMessage());
+        }
+    }//GEN-LAST:event_btnEmprunterActionPerformed
+
+    private void btnSupprimer1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSupprimer1ActionPerformed
+        // TODO add your handling code here:
+        int ligne = tableLecteurs.getSelectedRow();
+        if (ligne == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Sélectionnez un lecteur à supprimer.");
+            return;
+        }
+
+        String id = tableLecteurs.getValueAt(ligne, 0).toString();
+        int confirmation = javax.swing.JOptionPane.showConfirmDialog(this, "Supprimer ce lecteur ?", "Attention", javax.swing.JOptionPane.YES_NO_OPTION);
+
+        if (confirmation == javax.swing.JOptionPane.YES_OPTION) {
+            try {
+                java.sql.Connection con = DatabaseConnection.seConnecter();
+                String sql = "DELETE FROM lecteurs WHERE id_lecteur = ?";
+                java.sql.PreparedStatement pst = con.prepareStatement(sql);
+                pst.setString(1, id);
+                pst.executeUpdate();
+
+                afficherLecteurs();
+                txtNom.setText("");
+                txtTelephone.setText("");
+                javax.swing.JOptionPane.showMessageDialog(this, "Lecteur supprimé.");
+            } catch (Exception e) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Erreur (Vérifiez si ce lecteur n'a pas un emprunt en cours) : " + e.getMessage());
+            }
+        }
+    }//GEN-LAST:event_btnSupprimer1ActionPerformed
+
+    private void btnModifier1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnModifier1ActionPerformed
+        // TODO add your handling code here:
+        int ligne = tableLecteurs.getSelectedRow();
+        if (ligne == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Sélectionnez un lecteur à modifier.");
+            return;
+        }
+
+        String id = tableLecteurs.getValueAt(ligne, 0).toString();
+
+        try {
+            java.sql.Connection con = DatabaseConnection.seConnecter();
+            String sql = "UPDATE lecteurs SET nom_complet=?, telephone=? WHERE id_lecteur=?";
+            java.sql.PreparedStatement pst = con.prepareStatement(sql);
+
+            pst.setString(1, txtNom.getText());
+            pst.setString(2, txtTelephone.getText());
+            pst.setString(3, id);
+
+            pst.executeUpdate();
+            afficherLecteurs(); // On rafraîchit la liste
+            javax.swing.JOptionPane.showMessageDialog(this, "Infos lecteur mises à jour !");
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Erreur : " + e.getMessage());
+        }
+    }//GEN-LAST:event_btnModifier1ActionPerformed
+
+    private void tableLecteursMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableLecteursMouseClicked
+        // TODO add your handling code here:
+        int ligne = tableLecteurs.getSelectedRow();// On récupère les valeurs des colonnes 1 (Nom) et 2 (Téléphone)
+        txtNom.setText(tableLecteurs.getValueAt(ligne, 1).toString());
+        txtTelephone.setText(tableLecteurs.getValueAt(ligne, 2).toString());
+    }//GEN-LAST:event_tableLecteursMouseClicked
+
+    private void btnRetournerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRetournerActionPerformed
+        // TODO add your handling code here:
+        try {
+            // 1. Vérifier si un emprunt est sélectionné
+            int ligne = tableEmprunts.getSelectedRow();
+            if (ligne == -1) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Sélectionnez l'emprunt à clôturer !");
+                return;
+            }
+
+            // 2. Récupérer l'ID de l'emprunt et le nom du livre
+            String idEmprunt = tableEmprunts.getValueAt(ligne, 0).toString();
+            String titreLivre = tableEmprunts.getValueAt(ligne, 1).toString();
+
+            java.sql.Connection con = DatabaseConnection.seConnecter();
+
+            // ACTION 1 : Mettre à jour le statut de l'emprunt
+            String sqlUpdateEmprunt = "UPDATE emprunts SET statut = 'Rendu' WHERE id_emprunt = ?";
+            java.sql.PreparedStatement pst1 = con.prepareStatement(sqlUpdateEmprunt);
+            pst1.setString(1, idEmprunt);
+            pst1.executeUpdate();
+
+            // ACTION 2 : Rendre le livre à nouveau disponible dans la table livres
+            // On utilise le titre (ou l'ID si tu l'avais stocké) pour retrouver le livre
+            String sqlUpdateLivre = "UPDATE livres SET disponible = true WHERE titre = ?";
+            java.sql.PreparedStatement pst2 = con.prepareStatement(sqlUpdateLivre);
+            pst2.setString(1, titreLivre);
+            pst2.executeUpdate();
+
+            // 3. Rafraîchir l'interface
+            javax.swing.JOptionPane.showMessageDialog(this, "Le livre '" + titreLivre + "' a été rendu !");
+
+            afficherEmprunts(); 
+            afficherLivres();   
+            chargerListes();    // Le livre réapparaîtra dans la liste des choix pour un futur emprunt
+
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Erreur lors du retour : " + e.getMessage());
+        }
+    }//GEN-LAST:event_btnRetournerActionPerformed
 
     /**
      * @param args the command line arguments
@@ -348,19 +774,40 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAjouter;
+    private javax.swing.JButton btnAjouter1;
+    private javax.swing.JButton btnEmprunter;
     private javax.swing.JButton btnModifier;
+    private javax.swing.JButton btnModifier1;
+    private javax.swing.JButton btnRetourner;
     private javax.swing.JButton btnSupprimer;
+    private javax.swing.JButton btnSupprimer1;
+    private javax.swing.JComboBox<String> comboLecteurs;
+    private javax.swing.JComboBox<String> comboLivres;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTable jTable1;
+    private javax.swing.JTable tableEmprunts;
+    private javax.swing.JTable tableLecteurs;
     private javax.swing.JTable tableLivres;
     private javax.swing.JTextField txtAuteur;
     private javax.swing.JTextField txtCategorie;
+    private javax.swing.JTextField txtDateEmprunt;
+    private javax.swing.JTextField txtDateRetour;
+    private javax.swing.JTextField txtNom;
+    private javax.swing.JTextField txtTelephone;
     private javax.swing.JTextField txtTitre;
     // End of variables declaration//GEN-END:variables
 }
