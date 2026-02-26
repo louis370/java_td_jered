@@ -6,34 +6,34 @@
  * Author:  Kalala
  * Created: 26 févr. 2026
  */
+-- 1. Création de la base de données
+CREATE DATABASE IF NOT EXISTS registre_bibliotheque;
+USE registre_bibliotheque;
 
-CREATE DATABASE ma_bibliotheque;
-USE ma_bibliotheque;
-
--- Table des livres
+-- 2. Création de la table des Livres
 CREATE TABLE livres (
     id_livre INT PRIMARY KEY AUTO_INCREMENT,
-    titre VARCHAR(150) NOT NULL,
-    auteur VARCHAR(100),
-    categorie VARCHAR(50),
+    titre VARCHAR(200) NOT NULL,
+    auteur VARCHAR(150),
+    categorie VARCHAR(100),
     disponible BOOLEAN DEFAULT TRUE
 );
 
--- Table des membres
-CREATE TABLE membres (
-    id_membre INT PRIMARY KEY AUTO_INCREMENT,
-    nom VARCHAR(100),
+-- 3. Création de la table des Lecteurs (Membres)
+CREATE TABLE lecteurs (
+    id_lecteur INT PRIMARY KEY AUTO_INCREMENT,
+    nom_complet VARCHAR(150) NOT NULL,
     telephone VARCHAR(20)
 );
 
--- Table des emprunts
+-- 4. Création de la table des Emprunts (Le Registre)
 CREATE TABLE emprunts (
     id_emprunt INT PRIMARY KEY AUTO_INCREMENT,
     id_livre INT,
-    id_membre INT,
-    date_sortie DATE,
+    id_lecteur INT,
+    date_emprunt DATE,
     date_retour_prevue DATE,
-    statut VARCHAR(20) DEFAULT 'En cours',
+    statut VARCHAR(50) DEFAULT 'En cours',
     FOREIGN KEY (id_livre) REFERENCES livres(id_livre),
-    FOREIGN KEY (id_membre) REFERENCES membres(id_membre)
+    FOREIGN KEY (id_lecteur) REFERENCES lecteurs(id_lecteur)
 );
