@@ -20,6 +20,8 @@ public class MenuPrincipal extends javax.swing.JFrame {
      */
     public MenuPrincipal() {
         initComponents();
+        this.setTitle("DEFABooK");
+        this.setLocationRelativeTo(null);
         afficherLivres();
         afficherLecteurs();
         chargerListes();
@@ -111,14 +113,14 @@ public class MenuPrincipal extends javax.swing.JFrame {
             }
         }
                 public void afficherEmprunts() {
-                    String[] colonnes = {"N° Emprunt", "Livre", "Lecteur", "Date Emprunt", "Retour Prévu", "Statut"};
+                    // 1. On ajoute une 7ème colonne pour l'amende
+                    String[] colonnes = {"N° Emprunt", "Livre", "Lecteur", "Date Emprunt", "Retour Prévu", "Statut", "Amende"};
                     javax.swing.table.DefaultTableModel modele = new javax.swing.table.DefaultTableModel(null, colonnes);
 
                     try {
                         java.sql.Connection con = DatabaseConnection.seConnecter();
                         java.sql.Statement st = con.createStatement();
 
-                        // Requête pour lier les 3 tables ensemble !
                         String sql = "SELECT e.id_emprunt, l.titre, m.nom_complet, e.date_emprunt, e.date_retour_prevue, e.statut " +
                                      "FROM emprunts e " +
                                      "JOIN livres l ON e.id_livre = l.id_livre " +
@@ -126,21 +128,42 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
                         java.sql.ResultSet rs = st.executeQuery(sql);
 
+                        // On importe les outils pour calculer les dates
+                        java.time.LocalDate dateActuelle = java.time.LocalDate.now();
+
                         while (rs.next()) {
+                            String statut = rs.getString("statut");
+                            String datePrevueStr = rs.getString("date_retour_prevue");
+
+                            // 2. Calcul de l'amende
+                            long amende = 0;
+
+                            if (statut.equals("En cours") && datePrevueStr != null) {
+                                java.time.LocalDate datePrevue = java.time.LocalDate.parse(datePrevueStr);
+
+                                // Si la date actuelle a dépassé la date prévue
+                                if (dateActuelle.isAfter(datePrevue)) {
+                                    // On compte le nombre de jours de retard
+                                    long joursRetard = java.time.temporal.ChronoUnit.DAYS.between(datePrevue, dateActuelle);
+                                    amende = joursRetard * 500; // Tarif : 500 FC par jour de retard
+                                }
+                            }
+
                             Object[] ligne = {
                                 rs.getInt("id_emprunt"),
                                 rs.getString("titre"),
                                 rs.getString("nom_complet"),
                                 rs.getString("date_emprunt"),
-                                rs.getString("date_retour_prevue"),
-                                rs.getString("statut")
+                                datePrevueStr,
+                                statut,
+                                (amende > 0) ? amende + " FC" : "0 FC" // Affiche le montant ou 0
                             };
                             modele.addRow(ligne);
                         }
                         tableEmprunts.setModel(modele);
 
                     } catch (Exception e) {
-                        System.out.println("Erreur affichage emprunts : " + e.getMessage());
+                        System.out.println("Erreur affichage emprunts avec amende : " + e.getMessage());
                     }
                 }
     /**
@@ -716,10 +739,24 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 return;
             }
 
-            // 2. Récupérer l'ID de l'emprunt et le nom du livre
+            // 2. Récupérer l'ID de l'emprunt, le nom du livre et l'amende
             String idEmprunt = tableEmprunts.getValueAt(ligne, 0).toString();
             String titreLivre = tableEmprunts.getValueAt(ligne, 1).toString();
+            String amendeTexte = tableEmprunts.getValueAt(ligne, 6).toString();
+            
+            // Si l'amende n'est pas "0 FC", on alerte l'administrateur
+            if (!amendeTexte.equals("0 FC")) {
+                int choix = javax.swing.JOptionPane.showConfirmDialog(this, 
+                    "Attention ! Ce lecteur est en retard et doit une amende de : " + amendeTexte + ".\n\nLe lecteur a-t-il payé cette somme ?", 
+                    "Règlement de l'amende", 
+                    javax.swing.JOptionPane.YES_NO_OPTION, 
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
 
+                // Si l'administrateur clique sur "Non", on annule l'opération (le livre reste 'En cours')
+                if (choix != javax.swing.JOptionPane.YES_OPTION) {
+                    return; 
+                }
+            }
             java.sql.Connection con = DatabaseConnection.seConnecter();
 
             // ACTION 1 : Mettre à jour le statut de l'emprunt
