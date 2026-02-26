@@ -29,7 +29,6 @@ public class MenuPrincipal extends javax.swing.JFrame {
     }
 
     public void afficherLivres() {
-    // 1. On définit les colonnes de notre tableau
     String[] colonnes = {"ID", "Titre", "Auteur", "Catégorie", "Disponible"};
     DefaultTableModel modele = new DefaultTableModel(null, colonnes);
     
@@ -38,7 +37,6 @@ public class MenuPrincipal extends javax.swing.JFrame {
         Statement st = con.createStatement();
         ResultSet rs = st.executeQuery("SELECT * FROM livres");
         
-        // 2. On parcourt les résultats de la base de données
         while (rs.next()) {
             Object[] ligne = {
                 rs.getInt("id_livre"),
@@ -47,10 +45,9 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 rs.getString("categorie"),
                 rs.getBoolean("disponible") ? "Oui" : "Sorti"
             };
-            modele.addRow(ligne); // On ajoute la ligne au modèle
+            modele.addRow(ligne);
         }
         
-        // 3. On applique le modèle au tableau visuel
         tableLivres.setModel(modele);
         chargerListes();
         
@@ -83,7 +80,6 @@ public class MenuPrincipal extends javax.swing.JFrame {
         }
     }
                 public void chargerListes() {
-            // On vide les listes pour éviter les doublons au rafraîchissement
             comboLivres.removeAllItems();
             comboLecteurs.removeAllItems();
 
@@ -91,21 +87,18 @@ public class MenuPrincipal extends javax.swing.JFrame {
                 java.sql.Connection con = DatabaseConnection.seConnecter();
                 java.sql.Statement st = con.createStatement();
 
-                // 1. Charger uniquement les livres DISPONIBLES
                 java.sql.ResultSet rsLivres = st.executeQuery("SELECT id_livre, titre FROM livres WHERE disponible = true");
                 while(rsLivres.next()) {
                     comboLivres.addItem(rsLivres.getInt("id_livre") + " - " + rsLivres.getString("titre"));
                 }
 
-                // 2. Charger tous les lecteurs
                 java.sql.ResultSet rsLecteurs = st.executeQuery("SELECT id_lecteur, nom_complet FROM lecteurs");
                 while(rsLecteurs.next()) {
                     comboLecteurs.addItem(rsLecteurs.getInt("id_lecteur") + " - " + rsLecteurs.getString("nom_complet"));
                 }
 
-                // 3. Petite touche de confort : on met la date du jour automatiquement
                 txtDateEmprunt.setText(java.time.LocalDate.now().toString());
-                // Date de retour prévue dans 14 jours par exemple
+                
                 txtDateRetour.setText(java.time.LocalDate.now().plusDays(14).toString());
 
             } catch (Exception e) {
@@ -113,7 +106,6 @@ public class MenuPrincipal extends javax.swing.JFrame {
             }
         }
                 public void afficherEmprunts() {
-                    // 1. On ajoute une 7ème colonne pour l'amende
                     String[] colonnes = {"N° Emprunt", "Livre", "Lecteur", "Date Emprunt", "Retour Prévu", "Statut", "Amende"};
                     javax.swing.table.DefaultTableModel modele = new javax.swing.table.DefaultTableModel(null, colonnes);
 
@@ -128,24 +120,20 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
                         java.sql.ResultSet rs = st.executeQuery(sql);
 
-                        // On importe les outils pour calculer les dates
                         java.time.LocalDate dateActuelle = java.time.LocalDate.now();
 
                         while (rs.next()) {
                             String statut = rs.getString("statut");
                             String datePrevueStr = rs.getString("date_retour_prevue");
 
-                            // 2. Calcul de l'amende
                             long amende = 0;
 
                             if (statut.equals("En cours") && datePrevueStr != null) {
                                 java.time.LocalDate datePrevue = java.time.LocalDate.parse(datePrevueStr);
 
-                                // Si la date actuelle a dépassé la date prévue
                                 if (dateActuelle.isAfter(datePrevue)) {
-                                    // On compte le nombre de jours de retard
                                     long joursRetard = java.time.temporal.ChronoUnit.DAYS.between(datePrevue, dateActuelle);
-                                    amende = joursRetard * 500; // Tarif : 500 FC par jour de retard
+                                    amende = joursRetard * 500;
                                 }
                             }
 
@@ -156,7 +144,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
                                 rs.getString("date_emprunt"),
                                 datePrevueStr,
                                 statut,
-                                (amende > 0) ? amende + " FC" : "0 FC" // Affiche le montant ou 0
+                                (amende > 0) ? amende + " FC" : "0 FC"
                             };
                             modele.addRow(ligne);
                         }
@@ -485,40 +473,31 @@ public class MenuPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_txtAuteurActionPerformed
 
     private void btnAjouterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAjouterActionPerformed
-        // 1. Récupérer le texte tapé par l'administrateur
         String titre = txtTitre.getText();
         String auteur = txtAuteur.getText();
         String categorie = txtCategorie.getText();
 
-        // 2. Petite sécurité : vérifier que le titre n'est pas vide
         if (titre.isEmpty()) {
             javax.swing.JOptionPane.showMessageDialog(this, "Le titre du livre est obligatoire !", "Erreur", javax.swing.JOptionPane.WARNING_MESSAGE);
-            return; // On arrête l'exécution ici si c'est vide
+            return;
         }
 
-        // 3. Connexion et envoi à la base de données
         try {
-            // On appelle notre classe de connexion (Vérifie que le nom correspond bien à ta classe de l'étape 3)
             java.sql.Connection con = DatabaseConnection.seConnecter();
 
-            // On prépare la requête SQL (les "?" sont là pour des raisons de sécurité)
             String sql = "INSERT INTO livres (titre, auteur, categorie) VALUES (?, ?, ?)";
             java.sql.PreparedStatement pst = con.prepareStatement(sql);
 
-            // On remplace les "?" par les vraies valeurs
             pst.setString(1, titre);
             pst.setString(2, auteur);
             pst.setString(3, categorie);
 
-            // On exécute la requête
             pst.executeUpdate();
 
-            // On affiche un petit message de succès à l'écran
             javax.swing.JOptionPane.showMessageDialog(this, "Le livre a été ajouté avec succès !");
             
             afficherLivres();
 
-            // On vide les champs de texte pour le prochain livre
             txtTitre.setText("");
             txtAuteur.setText("");
             txtCategorie.setText("");
@@ -529,7 +508,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAjouterActionPerformed
 
     private void btnSupprimerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSupprimerActionPerformed
-    // 1. Vérifier si une ligne est sélectionnée dans le tableau
+
     int ligneSelectionnee = tableLivres.getSelectedRow();
 
     if (ligneSelectionnee == -1) {
@@ -537,10 +516,10 @@ public class MenuPrincipal extends javax.swing.JFrame {
         return;
     }
 
-    // 2. Récupérer l'ID du livre (colonne 0 de la ligne sélectionnée)
+
     String id = tableLivres.getValueAt(ligneSelectionnee, 0).toString();
 
-    // 3. Demander confirmation (sécurité pour l'administrateur)
+ 
     int confirmation = javax.swing.JOptionPane.showConfirmDialog(this, 
         "Voulez-vous vraiment supprimer ce livre ?", "Confirmation", javax.swing.JOptionPane.YES_NO_OPTION);
 
@@ -553,21 +532,19 @@ public class MenuPrincipal extends javax.swing.JFrame {
             pst.executeUpdate();
 
             javax.swing.JOptionPane.showMessageDialog(this, "Livre supprimé !");
-
-            // 4. Rafraîchir le tableau automatiquement
             afficherLivres();
 
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erreur : " + e.getMessage());
         }
-    }        // TODO add your handling code here:
+    }
     }//GEN-LAST:event_btnSupprimerActionPerformed
 
     private void tableLivresMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableLivresMouseClicked
         int ligne = tableLivres.getSelectedRow();
         txtTitre.setText(tableLivres.getValueAt(ligne, 1).toString());
         txtAuteur.setText(tableLivres.getValueAt(ligne, 2).toString());
-        txtCategorie.setText(tableLivres.getValueAt(ligne, 3).toString());        // TODO add your handling code here:
+        txtCategorie.setText(tableLivres.getValueAt(ligne, 3).toString());
     }//GEN-LAST:event_tableLivresMouseClicked
 
     private void btnModifierActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnModifierActionPerformed
@@ -590,7 +567,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
             javax.swing.JOptionPane.showMessageDialog(this, "Mise à jour réussie !");
         } catch (Exception e) {
             e.printStackTrace();
-        }        // TODO add your handling code here:
+        } 
     }//GEN-LAST:event_btnModifierActionPerformed
 
     private void btnAjouter1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAjouter1ActionPerformed
@@ -605,41 +582,34 @@ public class MenuPrincipal extends javax.swing.JFrame {
             pst.executeUpdate();
             javax.swing.JOptionPane.showMessageDialog(this, "Lecteur enregistré !");
 
-            // On vide les champs et on rafraîchit le tableau
             txtNom.setText("");
             txtTelephone.setText("");
             afficherLecteurs();
 
         } catch (Exception e) {
             e.printStackTrace();
-        }        // TODO add your handling code here:
+        }
     }//GEN-LAST:event_btnAjouter1ActionPerformed
 
     private void btnEmprunterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEmprunterActionPerformed
         // TODO add your handling code here:
         try {
-            // 1. Vérifier qu'il y a bien un livre et un lecteur sélectionnés
             if (comboLivres.getSelectedItem() == null || comboLecteurs.getSelectedItem() == null) {
                 javax.swing.JOptionPane.showMessageDialog(this, "Veuillez sélectionner un livre et un lecteur !");
                 return;
             }
 
-            // 2. Récupérer les éléments sélectionnés
             String livreSelectionne = comboLivres.getSelectedItem().toString();
             String lecteurSelectionne = comboLecteurs.getSelectedItem().toString();
 
-            // 3. Extraire les ID (On coupe le texte avant le " - " pour récupérer juste le numéro)
             int idLivre = Integer.parseInt(livreSelectionne.split(" - ")[0]);
             int idLecteur = Integer.parseInt(lecteurSelectionne.split(" - ")[0]);
 
-            // 4. Récupérer les dates
             String dateEmprunt = txtDateEmprunt.getText();
             String dateRetour = txtDateRetour.getText();
 
-            // 5. Connexion à la base de données
             java.sql.Connection con = DatabaseConnection.seConnecter();
 
-            // ACTION 1 : Enregistrer l'emprunt dans le registre
             String sqlEmprunt = "INSERT INTO emprunts (id_livre, id_lecteur, date_emprunt, date_retour_prevue, statut) VALUES (?, ?, ?, ?, 'En cours')";
             java.sql.PreparedStatement pst1 = con.prepareStatement(sqlEmprunt);
             pst1.setInt(1, idLivre);
@@ -648,18 +618,16 @@ public class MenuPrincipal extends javax.swing.JFrame {
             pst1.setString(4, dateRetour);
             pst1.executeUpdate();
 
-            // ACTION 2 : Mettre à jour le statut du livre (il n'est plus disponible)
             String sqlLivre = "UPDATE livres SET disponible = false WHERE id_livre = ?";
             java.sql.PreparedStatement pst2 = con.prepareStatement(sqlLivre);
             pst2.setInt(1, idLivre);
             pst2.executeUpdate();
 
-            // 6. Message de succès et rafraîchissement de TOUT le logiciel
             javax.swing.JOptionPane.showMessageDialog(this, "Emprunt validé avec succès !");
 
-            afficherEmprunts(); // Met à jour le tableau des emprunts
-            afficherLivres();   // Met à jour le tableau des livres (le statut passe à "Sorti")
-            chargerListes();    // Met à jour les listes déroulantes (le livre emprunté disparaît des choix !)
+            afficherEmprunts();
+            afficherLivres();
+            chargerListes();
 
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erreur lors de l'emprunt : " + e.getMessage());
@@ -715,7 +683,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
             pst.setString(3, id);
 
             pst.executeUpdate();
-            afficherLecteurs(); // On rafraîchit la liste
+            afficherLecteurs();
             javax.swing.JOptionPane.showMessageDialog(this, "Infos lecteur mises à jour !");
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erreur : " + e.getMessage());
@@ -724,7 +692,7 @@ public class MenuPrincipal extends javax.swing.JFrame {
 
     private void tableLecteursMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableLecteursMouseClicked
         // TODO add your handling code here:
-        int ligne = tableLecteurs.getSelectedRow();// On récupère les valeurs des colonnes 1 (Nom) et 2 (Téléphone)
+        int ligne = tableLecteurs.getSelectedRow();
         txtNom.setText(tableLecteurs.getValueAt(ligne, 1).toString());
         txtTelephone.setText(tableLecteurs.getValueAt(ligne, 2).toString());
     }//GEN-LAST:event_tableLecteursMouseClicked
@@ -732,19 +700,16 @@ public class MenuPrincipal extends javax.swing.JFrame {
     private void btnRetournerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRetournerActionPerformed
         // TODO add your handling code here:
         try {
-            // 1. Vérifier si un emprunt est sélectionné
             int ligne = tableEmprunts.getSelectedRow();
             if (ligne == -1) {
                 javax.swing.JOptionPane.showMessageDialog(this, "Sélectionnez l'emprunt à clôturer !");
                 return;
             }
 
-            // 2. Récupérer l'ID de l'emprunt, le nom du livre et l'amende
             String idEmprunt = tableEmprunts.getValueAt(ligne, 0).toString();
             String titreLivre = tableEmprunts.getValueAt(ligne, 1).toString();
             String amendeTexte = tableEmprunts.getValueAt(ligne, 6).toString();
             
-            // Si l'amende n'est pas "0 FC", on alerte l'administrateur
             if (!amendeTexte.equals("0 FC")) {
                 int choix = javax.swing.JOptionPane.showConfirmDialog(this, 
                     "Attention ! Ce lecteur est en retard et doit une amende de : " + amendeTexte + ".\n\nLe lecteur a-t-il payé cette somme ?", 
@@ -752,33 +717,27 @@ public class MenuPrincipal extends javax.swing.JFrame {
                     javax.swing.JOptionPane.YES_NO_OPTION, 
                     javax.swing.JOptionPane.WARNING_MESSAGE);
 
-                // Si l'administrateur clique sur "Non", on annule l'opération (le livre reste 'En cours')
                 if (choix != javax.swing.JOptionPane.YES_OPTION) {
                     return; 
                 }
             }
             java.sql.Connection con = DatabaseConnection.seConnecter();
 
-            // ACTION 1 : Mettre à jour le statut de l'emprunt
             String sqlUpdateEmprunt = "UPDATE emprunts SET statut = 'Rendu' WHERE id_emprunt = ?";
             java.sql.PreparedStatement pst1 = con.prepareStatement(sqlUpdateEmprunt);
             pst1.setString(1, idEmprunt);
             pst1.executeUpdate();
 
-            // ACTION 2 : Rendre le livre à nouveau disponible dans la table livres
-            // On utilise le titre (ou l'ID si tu l'avais stocké) pour retrouver le livre
             String sqlUpdateLivre = "UPDATE livres SET disponible = true WHERE titre = ?";
             java.sql.PreparedStatement pst2 = con.prepareStatement(sqlUpdateLivre);
             pst2.setString(1, titreLivre);
             pst2.executeUpdate();
 
-            // 3. Rafraîchir l'interface
             javax.swing.JOptionPane.showMessageDialog(this, "Le livre '" + titreLivre + "' a été rendu !");
 
             afficherEmprunts(); 
             afficherLivres();   
-            chargerListes();    // Le livre réapparaîtra dans la liste des choix pour un futur emprunt
-
+            chargerListes();
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this, "Erreur lors du retour : " + e.getMessage());
         }
